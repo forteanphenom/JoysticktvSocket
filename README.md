@@ -21,23 +21,23 @@ Usually, if your bot does something in response to messages or events in chat, y
 
 Once the JoystickMessage is received, there are many properties on it that can be checked to determine the contents and specifics of the message.
 
-string **rawData** is the serialized JSON exactly as it was received from joystick.tv.
-MessageType **type** is the type of the message, as one of the entries on the MessageType enum, below
-string? **user** is the user who sent the message or originated the event, if any.
-int? **tipAmount** is the number of tokens tipped or spent on a wheel spin.
-string? **prize** is result of the wheel spin, the goal that was met, or the item tipped for on a tip menu, as appropriate.
-string? **channelID** is the unique ID of the channel where the message or event took place.  This is useful if the bot needs to post a message in that channel, whisper at a user there, etc.
-string? **messageID** is the unique ID of the message or event.
-string? **text** is the text of a chat message, or the text displayed in chat with a stream event
-DateTime **time** is when the event took place, in UTC.
-int? **count** the number of 
-string? **timerName** is the name of the timer created in this event
-DateTime **timerEnd** is the time in UTC that the timer will elapse
-(string **emote**, string **emoteUrl**)[]? **emotes** is an array of tuples, where each index stores the emote’s name (as typed in chat, such as “<3” or “:JoseyFoxSniff:”) and the url of the image
-bool? **isFromStreamer** marks if the sender is the streamer in this room
-bool? **isFromModerator** marks if the sender is a moderator in this room
-bool? **isFromSubscriber** marks if the sender is a subscriber in this room
-string? **streamEventType** and the following are becaust stream events will be added as the site develops, so users of this library can account for MessageTypes not covered here, and handle their metadata
+string **rawData** is the serialized JSON exactly as it was received from joystick.tv  
+MessageType **type** is the type of the message, as one of the entries on the MessageType enum, below  
+string? **user** is the user who sent the message or originated the event, if any  
+int? **tipAmount** is the number of tokens tipped or spent on a wheel spin  
+string? **prize** is result of the wheel spin, the goal that was met, or the item tipped for on a tip menu, as appropriate  
+string? **channelID** is the unique ID of the channel where the message or event took place.  This is useful if the bot needs to post a message in that channel, whisper at a user there, etc.  
+string? **messageID** is the unique ID of the message or event  
+string? **text** is the text of a chat message, or the text displayed in chat with a stream event  
+DateTime **time** is when the event took place, in UTC  
+int? **count** the number of followers, subscribers, or viewers in an update event of any of those types  
+string? **timerName** is the name of the timer created in this event  
+DateTime **timerEnd** is the time in UTC that the timer will elapse  
+(string **emote**, string **emoteUrl**)[]? **emotes** is an array of tuples, where each index stores the emote’s name (as typed in chat, such as “<3” or “:JoseyFoxSniff:”) and the url of the image  
+bool? **isFromStreamer** marks if the sender is the streamer in this room  
+bool? **isFromModerator** marks if the sender is a moderator in this room  
+bool? **isFromSubscriber** marks if the sender is a subscriber in this room  
+string? **streamEventType** and the following are becaust stream events will be added as the site develops, so users of this library can account for MessageTypes not covered here, and handle their metadata  
 string? **streamEventMetadata**
 
 Other than rawMessage, type, and time, all of these properties are nullable, so some explicit casting may be needed when using these properties.  timerEnd is also not nullable, so that you can easily call .ToLocalTime() on it, if need be.  If the event is not a timer start, it will return DateTime.Min
@@ -46,12 +46,12 @@ The MessageTypes in the MessageType enum are listed at the end of this document,
 
 In addition to receiving data, you can send messages to the joystick websocket, also through the JoystickConnection object.
 
-**ChatMessage(**string channelID, string message**)**
-**Whisper(**string user, string channelID, string message**)**
-**SilenceUser(**string messageID, string channelID**)**
-**UnsilenceUser(**string user, string channelID**)**
-**BlockUser(**string messageID, string channelID**)**
-**DeleteMessage(**string messageID, string channelID**)**
+**ChatMessage(** string channelID, string message **)**  
+**Whisper(** string user, string channelID, string message **)**  
+**SilenceUser(** string messageID, string channelID **)**  
+**UnsilenceUser(** string user, string channelID **)**  
+**BlockUser(** string messageID, string channelID **)**  
+**DeleteMessage(** string messageID, string channelID **)**  
 **Close()**
 
 All of these methods return a JoystickWebsocketStatus, which may be
