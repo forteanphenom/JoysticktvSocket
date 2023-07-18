@@ -63,3 +63,5 @@ All of these methods return a JoystickWebsocketStatus, which may be
 - NotValidMessageID
 
 The last two only check that the channelID or messageID are formatted properly to fill that role, and do not ensure that they match with an extant message or channel ID.
+
+![MessageTypes and their associated properties in a JoystickMessage object](messageType-chart.png)
