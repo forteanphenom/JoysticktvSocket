@@ -5,11 +5,13 @@ using System.Text;
 using System.Threading;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace JoysticktvSocket;
 
 public class JoystickMessage
 {
+    /// <summary>The JSON exactly as the socket recives it from Joystick.tv.</summary>
     public string rawData { get; init; }
     public MessageType type { get; init; }
     public string? user { get; init; }
@@ -35,19 +37,56 @@ public class JoystickMessage
 public class JoystickConnection
 {
     private ClientWebSocket ws;
-    public bool isSocketOpen { get => (ws.State == WebSocketState.Open); }
+    private Thread listenerThread;
 
+    private CancellationTokenSource canceller;
+
+    /// <summary>
+    /// returns true of the attached websocket is open, and false otherwise
+    /// </summary>
+    public bool isSocketOpen
+    {
+        get
+        {
+            if (ws == null) return false;
+            return (ws.State == WebSocketState.Open);
+        }
+    }
+    public bool isListening
+    {
+        get
+        {
+            if (listenerThread == null) return false;
+            return listenerThread.IsAlive;
+        }
+    }
+
+    /// <summary>
+    /// This event is triggered every time a message is received, when using ConnectAndListen()
+    /// </summary>
+    public event EventHandler<JoystickMessage> OnMessageReceived;
+
+    /// <summary>
+    /// Connects synchronoursly to Joystick.tv's Websocket 
+    /// </summary>
+    /// <param name="clientID"></param>
+    /// <param name="clientSecret"></param>
+    /// <returns></returns>
     public JoystickWebsocketStatus Connect(string clientID, string clientSecret)
     {
+        //set up my cancelation token
+        canceller = new CancellationTokenSource();
+
         Uri joystuckUri = new($"wss://joystick.tv/cable?token={GetBasicKey(clientID, clientSecret)}"); //make me a URI with my id and secret
 
         //if i've disposed or not yet created the client, make a new one
-        if (ws == null) ws = new ClientWebSocket();
+        ws = new ClientWebSocket();
 
         ws.Options.AddSubProtocol("actioncable-v1-json"); //set the subprotocol, as required by joystick.tv
+
         try
         {
-            ws.ConnectAsync(joystuckUri, CancellationToken.None).Wait(); //connect
+            ws.ConnectAsync(joystuckUri, canceller.Token).Wait(); //connect
         }
         catch
         {
@@ -62,12 +101,22 @@ public class JoystickConnection
 
         //if we don't get a subscribe success, let the user know
         string confirmMessage = "{\"type\":\"confirm_subscription\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\"}";
-        if (!isSocketOpen || Receive().rawData == confirmMessage) return JoystickWebsocketStatus.FailedSocketSubscription;
+        if (!isSocketOpen || Receive().rawData != confirmMessage) return JoystickWebsocketStatus.FailedSocketSubscription;
 
         return JoystickWebsocketStatus.Success;
     }
+    /// <summary>
+    /// Listens fof a message from the Joystick Websocket, once open.
+    /// </summary>
+    /// <returns></returns>
     public JoystickMessage Receive()
     {
+        //if we try to receive when the websocket is not open, return an unknown message
+        if (!isSocketOpen)
+        {
+            throw new InvalidOperationException("Cannot Receive on a Joystick Websocket that is not Open");
+        }
+
         string msg = "";
         bool completed = false;
 
@@ -80,7 +129,7 @@ public class JoystickConnection
 
             try
             {
-                result = ws.ReceiveAsync(buffer, System.Threading.CancellationToken.None).Result; //listen for a message and fill that buffer
+                result = ws.ReceiveAsync(buffer, canceller.Token).Result; //listen for a message and fill that buffer
             }
             catch
             {
@@ -100,6 +149,12 @@ public class JoystickConnection
 
         return (MessageParser.ParseFromString(msg.Trim('\0'))); //return that buffer's contents as a parsed message
     }
+    /// <summary>
+    /// Silences the sender od the specivied message, preventing them from further speaking in the specified channel.
+    /// </summary>
+    /// <param name="messageID"></param>
+    /// <param name="channelID"></param>
+    /// <returns></returns>
     public JoystickWebsocketStatus SilenceUser(string messageID, string channelID)
     {
         //make sure the websocket is open
@@ -146,6 +201,13 @@ public class JoystickConnection
 
     }
 
+    /// <summary>
+    /// Sends the specivied user a whisper in chat.
+    /// </summary>
+    /// <param name="user"></param>
+    /// <param name="channelID"></param>
+    /// <param name="message"></param>
+    /// <returns></returns>
     public JoystickWebsocketStatus Whisper(string user, string channelID, string message)
     {
         //make sure the websocket is open
@@ -175,7 +237,12 @@ public class JoystickConnection
 
         return JoystickWebsocketStatus.Success;
     }
-
+    /// <summary>
+    /// Removes the message with the specified ID from the specified Joystick channel.
+    /// </summary>
+    /// <param name="messageID"></param>
+    /// <param name="channelID"></param>
+    /// <returns></returns>
     public JoystickWebsocketStatus DeleteMessage(string messageID, string channelID)
     {
         //make sure the websocket is open
@@ -194,17 +261,61 @@ public class JoystickConnection
     private void Send(string msg)
     {
         ArraySegment<byte> buffer = new ArraySegment<byte>(Encoding.UTF8.GetBytes(msg)); //convert this string into an an arraysegment
-        ws.SendAsync(buffer, WebSocketMessageType.Text, true, System.Threading.CancellationToken.None).Wait(); //send that arraysegment
+        ws.SendAsync(buffer, WebSocketMessageType.Text, true, canceller.Token).Wait(); //send that arraysegment
     }
 
     public void Close()
     {
+        //send out the cancellation token to everything
+        canceller.Cancel();
+
         if (isSocketOpen)
         {
             ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", CancellationToken.None).Wait();
         }
+
+        //wait for the listener to close
+        if (isListening)
+        {
+            Thread.Sleep(200);
+        }
+
         ws.Dispose();
         ws = null;
+
+
+    }
+    /// <summary>
+    /// Connects to the Joystick Websocket, and sends an OnMessageReceived event every time a message is received.
+    /// </summary>
+    /// <param name="clientID"></param>
+    /// <param name="clientSecret"></param>
+    /// <returns></returns>
+    public void ConnectAndListen(string clientID, string clientSecret)
+    {
+        listenerThread = new Thread(() => Listen(clientID, clientSecret));
+        listenerThread.Start();
+    }
+
+    private void Listen(string clientID, string clientSecret)
+    {
+        Connect(clientID, clientSecret);
+        //until someone calls Close()
+        while (!canceller.IsCancellationRequested)
+        {
+            while (isSocketOpen && !canceller.IsCancellationRequested)
+            {
+                JoystickMessage _msg = Receive();
+                OnMessageReceived?.Invoke(this, _msg);
+            }
+            //if we aren't closing this, reconnect
+            if (!canceller.IsCancellationRequested)
+            {
+                JoystickWebsocketStatus status = Connect(clientID, clientSecret);
+                //if the connection was not successful, wait 3 seconds
+                if (status != JoystickWebsocketStatus.Success) Thread.Sleep(3000);
+            }
+        }
     }
 
     private string GetBasicKey(string clientId, string clientSecret)
@@ -463,6 +574,7 @@ public class JoystickConnection
                 //we need MANY escape characters because of the way this will be deserialized
                 if (message[i] == '"') message = message.Insert(i, "\\\\\\");
                 else if (message[i] == '\\') message = message.Insert(i, "\\\\\\");
+                else if (message[i] == '\n') message = message.Insert(i, "\\\\\\");
             }
 
             return message;

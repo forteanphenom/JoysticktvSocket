@@ -1,7 +1,7 @@
-### Using the JoysticktvSocket Library
-
+# Using JoysticktvSocket    
 First you will need a joystick.tv account, and will need to create a bot at https://joystick.tv/applications by clicking Create Bot.  Fill out the form and make sure you give your bot the permissions it will need in this step, because permissions cannot be changed later. Upon clicking Submit Bot, you will be taken to a page with your **client ID** and **client secret**, which you will need to establish a connection with joystick.tv via websocket.
 
+### Connecting to Joystick
 With your ID and secret, connecting is as easy as instantiating an object of the class **JoystickConnection** and opening the websocket using the **Connect()** method, like so:
 
     JoystickConnection jsSocket = new JoystickConnection();
@@ -18,6 +18,29 @@ You can now use several methods of your JoystickConnection to interact with the 
     JoystickMessage jsMessage = jsSocket.Receive();
 
 Usually, if your bot does something in response to messages or events in chat, you will have the **Receive()** method being called in a loop such as a while loop checking the isSocketOpen property of your JoystickConnection object.  The loop will wait for the Receive() method to return a message, and then will do something in response to that message, before starting again at the beginning of the loop.
+
+### Connecting in a New Thread with Events
+If you wish to handle messages as events, rather than receive them manually, the **ConnectAndListen()** method on your **JoystickConnection** object connects to Joystick.tv and runs **Receive()** in a new thread, and raises an **OnMessageReceived** event every time the thread receives something.
+
+Methods that subscribe to the OnMessage event should take as parameters the event sender as an **object?**, and the message as a **JoystickMessage** pameter.  For example, you could initialize the socket and connect with:
+
+    JoystickConnection jsSocket = new JoystickConnection();
+    jsSocket.ConnectAndListen(CLIENT_ID, CLIENT_SECRET);
+    jsSocket.OnMessage += YourMethod
+    
+Then, any time a message is received by the socket (be it a chat message, stream event, ping, etc), YourMethod would be called.  For instance.
+
+    public void YourMethod(object? sender, JoystickMessage e)
+    {
+        if (e.type == MessageType.ChatMessage)
+        {
+            Console.WriteLine($"{e.user} said: {e.text}");
+        }
+    }
+
+When a connection made with **ConnectAndListen()** is interrupted, the socket will automatically reconnect with the same credentials.  This connection must be closed with the **Close()** method, below.
+
+### Messages
 
 Once the JoystickMessage is received, there are many properties on it that can be checked to determine the contents and specifics of the message.
 
@@ -42,7 +65,9 @@ string? **streamEventMetadata**
 
 Other than rawMessage, type, and time, all of these properties are nullable, so some explicit casting may be needed when using these properties.  timerEnd is also not nullable, so that you can easily call .ToLocalTime() on it, if need be.  If the event is not a timer start, it will return DateTime.Min
 
-The MessageTypes in the MessageType enum are listed at the end of this document, with which JoystickMessage properties are attached to each type
+The MessageTypes in the MessageType enum are listed at the end of this document, with which JoystickMessage properties are attached to each type.
+
+### Sending to Joystick
 
 In addition to receiving data, you can send messages to the joystick websocket, also through the JoystickConnection object.
 
@@ -52,7 +77,7 @@ In addition to receiving data, you can send messages to the joystick websocket, 
 **UnsilenceUser(** string user, string channelID **)**  
 **BlockUser(** string messageID, string channelID **)**  
 **DeleteMessage(** string messageID, string channelID **)**  
-**Close()**
+**Close()** - Closes the websocket, as well as ending the thread with 
 
 All of these methods return a JoystickWebsocketStatus, which may be
 - Success
