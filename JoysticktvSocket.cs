@@ -9,7 +9,8 @@ using System.Threading.Tasks;
 
 namespace JoysticktvSocket;
 
-public class JoystickMessage
+/// <summary>An object representing the message or event received from Joystick.tv</summary>
+public class JoystickMessage : EventArgs
 {
     /// <summary>The JSON exactly as the socket recives it from Joystick.tv.</summary>
     public string rawData { get; init; }
