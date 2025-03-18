@@ -114,6 +114,7 @@ public class JoystickMessage : EventArgs
         if (type == "TipMenuItemUnlocked") return MessageType.TipUnlocked;
         if (type == "TipGoalMet") return MessageType.TipGoal;
         if (type == "TipGoalUpdated") return MessageType.TipGoalUpdate;
+        if (type == "TipGoalIncreased") return MessageType.TipGoalIncreased;
         if (type == "StreamModeUpdated") return MessageType.StreamModeUpdated;
         if (type == "ViewerCountUpdated") return MessageType.ViewerCountUpdate;
         if (type == "SubscriberCountUpdated") return MessageType.SubCountUpdate;
@@ -127,6 +128,12 @@ public class JoystickMessage : EventArgs
         if (type == "VerifiedOnlyChatEnded") return MessageType.VerifiedOnlyEnded;
         if (type == "MilestoneCompleted") return MessageType.MilestoneCompleted;
         if (type == "DeviceDisconnected") return MessageType.DeviceDisconnected;
+        if (type == "UserMuted") return MessageType.UserMuted;
+        if (type == "UserUnmuted") return MessageType.UserUnmuted;
+        if (type == "PvpSessionRequested") return MessageType.PvpRequested;
+        if (type == "PvpSessionReady") return MessageType.PvpReady;
+        if (type == "PvpSessionStarted") return MessageType.PvpStarted;
+        if (type == "PvpSessionEnded") return MessageType.PvpEnded;
         if (@event == "StreamEvent") return MessageType.UnknownStreamEvent;
         return MessageType.Unknown;
     }
@@ -504,6 +511,13 @@ public enum MessageType
     VerifiedOnlyEnded = 323,
     MilestoneCompleted = 324,
     TipGoalUpdate = 325,
+    UserMuted = 326,
+    UserUnmuted = 327,
+    PvpRequested = 328,
+    PvpReady = 329,
+    PvpStarted = 330,
+    PvpEnded = 331,
+    TipGoalIncreased = 332,
     UnknownStreamEvent = 399,
 }
 
