@@ -56,28 +56,15 @@ public class JoystickMessage : EventArgs
             return;
         }
 
-        RawMessages.ParsedEvent data;
-        try
-        {
-            data = JsonSerializer.Deserialize<RawMessages.ParsedEvent>(StripIdentifier(message));
-        }
-        catch
-        {
-            // if we are unable to parse it, then deliver it as unknown
-            type = MessageType.Unknown;
-            time = DateTime.Now;
-            return;
-        }
-        
+        RawMessages.ParsedEvent data = JsonSerializer.Deserialize<RawMessages.ParsedEvent>(StripIdentifier(message));
         type = GetMessageType(data.@event, data.type);
-            
         time = data.createdAt ?? DateTime.Now;
         channelID = data.channelId;
         messageID = data.messageId ?? data.id;
 
         if (type == MessageType.UserEnter || type == MessageType.UserLeave) user = data.text;
 
-        else if ((int)type >= 300 && type != MessageType.UnknownStreamEvent)
+        else if ((int)type >= 300)
         {
             text = data.text ?? "";
             streamEventMetadata = data.metadata;
@@ -85,17 +72,12 @@ public class JoystickMessage : EventArgs
 
             RawMessages.ParsedEvent.MetaData metaData = JsonSerializer.Deserialize<RawMessages.ParsedEvent.MetaData>(data.metadata ?? "{}");
 
-            streamerName = metaData.where; // this is only given on PVP events
-
             user = metaData.destination_username ?? metaData.who;
-            if (type == MessageType.Tip || type == MessageType.WheelSpin)
-            {
-                tipAmount = metaData.how_much;
-            }
+            tipAmount = metaData.how_much;
             count = metaData.number_of_viewers ?? metaData.number_of_followers ?? metaData.number_of_subscribers;
             prize = metaData.title ?? metaData.tip_menu_item ?? metaData.prize;
             timerEnds = metaData.endsAt;
-            timerName = (type == MessageType.TimerStarted) ? metaData.name : null; //SO LONG AS ONLY TIMERS HAVE A NAME
+            timerName = metaData.name; //SO LONG AS ONLY TIMERS HAVE A NAME
         }
 
         else if (type == MessageType.ChatMessage)
@@ -113,17 +95,11 @@ public class JoystickMessage : EventArgs
                 _emotes.Add((emoteEntry.code, emoteEntry.signedUrl));
             emotes = _emotes.ToArray();
         }
-        else if (type == MessageType.BotMessage)
-        {
-            user = data.author.username;
-            text = data.text;
-        }
     }
 
-    private static MessageType GetMessageType(string? @event, string? type)
+    private MessageType GetMessageType(string? @event, string? type)
     {
         if (@event == "ChatMessage") return MessageType.ChatMessage;
-        if (@event == "BotMessage") return MessageType.BotMessage;
         if (type == "enter_stream") return MessageType.UserEnter;
         if (type == "leave_stream") return MessageType.UserLeave;
         if (type == "Followed") return MessageType.NewFollower;
@@ -138,7 +114,6 @@ public class JoystickMessage : EventArgs
         if (type == "TipMenuItemUnlocked") return MessageType.TipUnlocked;
         if (type == "TipGoalMet") return MessageType.TipGoal;
         if (type == "TipGoalUpdated") return MessageType.TipGoalUpdate;
-        if (type == "TipGoalIncreased") return MessageType.TipGoalIncreased;
         if (type == "StreamModeUpdated") return MessageType.StreamModeUpdated;
         if (type == "ViewerCountUpdated") return MessageType.ViewerCountUpdate;
         if (type == "SubscriberCountUpdated") return MessageType.SubCountUpdate;
@@ -152,13 +127,6 @@ public class JoystickMessage : EventArgs
         if (type == "VerifiedOnlyChatEnded") return MessageType.VerifiedOnlyEnded;
         if (type == "MilestoneCompleted") return MessageType.MilestoneCompleted;
         if (type == "DeviceDisconnected") return MessageType.DeviceDisconnected;
-        if (type == "UserMuted") return MessageType.Mute;
-        if (type == "UserUnmuted") return MessageType.Unmute;
-        if (type == "PvpSessionRequested") return MessageType.PvpRequested;
-        if (type == "PvpSessionReady") return MessageType.PvpReady;
-        if (type == "PvpSessionStarted") return MessageType.PvpStarted;
-        if (type == "PvpSessionEnded") return MessageType.PvpEnded;
-
         if (@event == "StreamEvent") return MessageType.UnknownStreamEvent;
         return MessageType.Unknown;
     }
@@ -181,8 +149,6 @@ public class JoystickMessage : EventArgs
 
     internal static string StripIdentifier(string message)
     {
-        // this prevents messages that are too short from being trimmed, and then they can be returned unexamined
-        if (message.Length < 60) return message;
         return message.Substring(59, message.Length - 60); ;
     } //gets rid of some junk in the json
 }
@@ -497,7 +463,6 @@ internal class RawMessages
             public int? number_of_followers { get; set; } // for follower count updates
             public string? title { get; set; } // the prize for tip lock and tip unlock
             public string? destination_username { get; set; }//the destination of a drop in
-            public string? where { get; set; } // the streamer hosting a private
         }
     }
 }
@@ -510,7 +475,6 @@ public enum MessageType
     Ping = 0,
     //chat events
     ChatMessage = 100,
-    BotMessage = 101,
     //user events
     UserEnter = 200,
     UserLeave = 201,
@@ -524,11 +488,10 @@ public enum MessageType
     NewSubscriber = 306,
     GiftSubs = 307,
     SubCountUpdate = 308,
-    Resubscribed = 309,
-    DropIn = 310,
-    OutgoingDropIn = 311,
-    TipGoal = 312,
-    StreamModeUpdated = 313,
+    DropIn = 309,
+    OutgoingDropIn = 310,
+    TipGoal = 311,
+    StreamModeUpdated = 312,
     ViewerCountUpdate = 314,
     TimerStarted = 315,
     TipLocked = 316,
@@ -541,19 +504,6 @@ public enum MessageType
     VerifiedOnlyEnded = 323,
     MilestoneCompleted = 324,
     TipGoalUpdate = 325,
-    TipGoalIncreased = 326,
-    /// <summary>
-    /// An overlay scene has its configs updated
-    /// </summary>
-    SceneUpdated = 327,
-    Mute = 330,
-    Unmute = 331,
-    
-    PvpRequested = 350,
-    PvpReady = 351,
-    PvpStarted = 352,
-    PvpEnded = 353,
-
     UnknownStreamEvent = 399,
 }
 

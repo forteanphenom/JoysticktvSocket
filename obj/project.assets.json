@@ -14,11 +14,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj",
+      "projectUniqueName": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket2\\JoysticktvSocket\\JoysticktvSocket.csproj",
       "projectName": "JoysticktvSocket",
-      "projectPath": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj",
+      "projectPath": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket2\\JoysticktvSocket\\JoysticktvSocket.csproj",
       "packagesPath": "C:\\Users\\ambro\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\obj\\",
+      "outputPath": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket2\\JoysticktvSocket\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
