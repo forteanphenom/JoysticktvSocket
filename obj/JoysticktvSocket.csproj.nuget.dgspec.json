@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj": {}
+    "C:\\Users\\ambro\\source\\repos\\DLLs\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj": {}
   },
   "projects": {
-    "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj": {
+    "C:\\Users\\ambro\\source\\repos\\DLLs\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj",
+        "projectUniqueName": "C:\\Users\\ambro\\source\\repos\\DLLs\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj",
         "projectName": "JoysticktvSocket",
-        "projectPath": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj",
+        "projectPath": "C:\\Users\\ambro\\source\\repos\\DLLs\\JoysticktvSocket\\JoysticktvSocket\\JoysticktvSocket.csproj",
         "packagesPath": "C:\\Users\\ambro\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\ambro\\source\\repos\\JoysticktvSocket\\JoysticktvSocket\\obj\\",
+        "outputPath": "C:\\Users\\ambro\\source\\repos\\DLLs\\JoysticktvSocket\\JoysticktvSocket\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -22,7 +22,7 @@
           "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
-          "net6.0"
+          "net8.0"
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
@@ -30,8 +30,8 @@
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
-          "net6.0": {
-            "targetAlias": "net6.0",
+          "net8.0": {
+            "targetAlias": "net8.0",
             "projectReferences": {}
           }
         },
@@ -39,11 +39,17 @@
           "warnAsError": [
             "NU1605"
           ]
-        }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
+        },
+        "SdkAnalysisLevel": "9.0.300"
       },
       "frameworks": {
-        "net6.0": {
-          "targetAlias": "net6.0",
+        "net8.0": {
+          "targetAlias": "net8.0",
           "imports": [
             "net461",
             "net462",
@@ -60,7 +66,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.306\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.304/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

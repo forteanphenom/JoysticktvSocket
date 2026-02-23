@@ -1,0 +1,3 @@
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net8.0\publish\linux-x64\JoysticktvSocket.dll
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net8.0\publish\linux-x64\JoysticktvSocket.deps.json
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net8.0\publish\linux-x64\JoysticktvSocket.pdb

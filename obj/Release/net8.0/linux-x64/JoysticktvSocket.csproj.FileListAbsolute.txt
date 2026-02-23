@@ -1,0 +1,12 @@
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net8.0\linux-x64\JoysticktvSocket.deps.json
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net8.0\linux-x64\JoysticktvSocket.dll
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net8.0\linux-x64\JoysticktvSocket.pdb
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.AssemblyInfoInputs.cache
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.AssemblyInfo.cs
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.csproj.CoreCompileInputs.cache
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.sourcelink.json
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.dll
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\refint\JoysticktvSocket.dll
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\JoysticktvSocket.pdb
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net8.0\linux-x64\ref\JoysticktvSocket.dll

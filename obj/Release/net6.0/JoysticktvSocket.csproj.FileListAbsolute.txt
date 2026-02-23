@@ -1,7 +1,6 @@
 C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net6.0\JoysticktvSocket.deps.json
 C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net6.0\JoysticktvSocket.dll
 C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\bin\Release\net6.0\JoysticktvSocket.pdb
-C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net6.0\JoysticktvSocket.csproj.AssemblyReference.cache
 C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net6.0\JoysticktvSocket.GeneratedMSBuildEditorConfig.editorconfig
 C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net6.0\JoysticktvSocket.AssemblyInfoInputs.cache
 C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net6.0\JoysticktvSocket.AssemblyInfo.cs
@@ -22,3 +21,4 @@ C:\Users\ambro\source\repos\JoysticktvSocket2\JoysticktvSocket\obj\Release\net6.
 C:\Users\ambro\source\repos\JoysticktvSocket2\JoysticktvSocket\obj\Release\net6.0\refint\JoysticktvSocket.dll
 C:\Users\ambro\source\repos\JoysticktvSocket2\JoysticktvSocket\obj\Release\net6.0\JoysticktvSocket.pdb
 C:\Users\ambro\source\repos\JoysticktvSocket2\JoysticktvSocket\obj\Release\net6.0\ref\JoysticktvSocket.dll
+C:\Users\ambro\source\repos\JoysticktvSocket\JoysticktvSocket\obj\Release\net6.0\JoysticktvSocket.sourcelink.json
