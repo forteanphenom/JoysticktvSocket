@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Text.Json;
+using System.Collections.Generic;
 using System.Net.WebSockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace JoysticktvSocket;
 
 
 //the class that contains our websocket, whose methods we will use to send and receive messages
-public class JoystickConnection
+public class JoystickWebsocket
 {
     private ClientWebSocket ws;
     private Thread listenerThread;
@@ -40,11 +40,11 @@ public class JoystickConnection
     /// <summary>
     /// This event is triggered every time a message is received, when using ConnectAndListen()
     /// </summary>
-    public event EventHandler<JoystickMessage> OnMessageReceived;
+    public event EventHandler<JoystickSocketMessage> OnMessageReceived;
 
     public bool TroubleshootOutput = false;
 
-    public JoystickConnection(string clientID, string clientSecret)
+    public JoystickWebsocket(string clientID, string clientSecret)
     {
         byte[] plainTextBytes = Encoding.UTF8.GetBytes($"{clientID}:{clientSecret}");
         _basicKey = Convert.ToBase64String(plainTextBytes); ;
@@ -62,7 +62,7 @@ public class JoystickConnection
         //set up my cancelation token
         canceller = new CancellationTokenSource();
 
-        Uri joystuckUri = new($"wss://joystick.tv/cable?token={_basicKey}"); //make me a URI with my id and secret
+        Uri joystuckUri = new($"wss://api.joystick.tv/cable?token={_basicKey}"); //make me a URI with my id and secret
 
         //if i've disposed or not yet created the client, make a new one
         ws = new ClientWebSocket();
@@ -79,20 +79,33 @@ public class JoystickConnection
 
         Receive(); //receive the welcome message.  don't need to do anything with this
 
+        SocketSubscribeMessage subscribeMessage = new SocketSubscribeMessage();
+
         //subscribe to websocket connection
-        Send("{\"command\":\"subscribe\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\"}");
+        Send(subscribeMessage.Serialize());
+
+        if (!isSocketOpen)
+        {
+            if (TroubleshootOutput) Console.WriteLine("Socket Closed Before Subscription");
+            return JoystickWebsocketStatus.FailedSocketSubscription;
+        }
 
         //if we don't get a subscribe success, let the user know
-        string confirmMessage = "{\"type\":\"confirm_subscription\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\"}";
-        if (!isSocketOpen || Receive().rawData != confirmMessage) return JoystickWebsocketStatus.FailedSocketSubscription;
+        string confirmMessage = "{\"type\":\"confirm_subscription\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\",\\\"event_version\\\":\\\"v2\\\"}\"}";
+        string actualMessage = Receive().rawData;
 
+        if (!isSocketOpen || actualMessage != confirmMessage)
+        {
+            if (TroubleshootOutput) Console.WriteLine("Received Bad Confirmation:\n" + actualMessage);
+            return JoystickWebsocketStatus.FailedSocketSubscription;
+        }
         return JoystickWebsocketStatus.Success;
     }
     /// <summary>
     /// Listens fof a message from the Joystick Websocket, once open.
     /// </summary>
     /// <returns></returns>
-    public JoystickMessage Receive()
+    public JoystickSocketMessage Receive()
     {
         //if we try to receive when the websocket is not open, return an unknown message
         if (!isSocketOpen) throw new InvalidOperationException("Cannot Receive on a Joystick Websocket that is not Open");
@@ -110,7 +123,7 @@ public class JoystickConnection
             try { result = ws.ReceiveAsync(buffer, canceller.Token).Result; } //listen for a message and fill that buffer
             catch
             {
-                return new JoystickMessage() //if it didn't work, return just an unknown message and the time in UTC
+                return new JoystickSocketMessage() //if it didn't work, return just an unknown message and the time in UTC
                 {
                     type = MessageType.Unknown,
                     time = DateTime.Now.ToUniversalTime()
@@ -121,7 +134,7 @@ public class JoystickConnection
             completed = result.EndOfMessage;
         }
 
-        return (new JoystickMessage(msg.Trim('\0'))); //return that buffer's contents as a parsed message
+        return (new JoystickSocketMessage(msg.Trim('\0'))); //return that buffer's contents as a parsed message
     }
     /// <summary>
     /// Silences the sender od the specivied message, preventing them from further speaking in the specified channel.
@@ -133,7 +146,20 @@ public class JoystickConnection
     {
         if (!isSocketOpen) return JoystickWebsocketStatus.SocketNotOpen;
 
-        string sendMessage = "{\"command\":\"message\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\",\"data\":\"{\\\"action\\\":\\\"mute_user\\\",\\\"messageId\\\":\\\"" + messageID + "\\\",\\\"channelId\\\":\\\"" + channelID + "\\\"}\"}";
+        Dictionary<string, string> data = new Dictionary<string, string>()
+        {
+            { "action", "mute_whisper"},
+            { "channelId", channelID},
+            { "messageId", messageID},
+            { "channel_id", channelID},
+            { "message_id", messageID},
+
+        };
+        string sendMessage = new SocketCommandMessage(data).Serialize();
+
+        if (TroubleshootOutput) Console.WriteLine(sendMessage);
+
+
         Send(sendMessage);
 
         return JoystickWebsocketStatus.Success;
@@ -143,7 +169,19 @@ public class JoystickConnection
     {
         if (!isSocketOpen) return JoystickWebsocketStatus.SocketNotOpen;
 
-        string sendMessage = "{\"command\":\"message\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\",\"data\":\"{\\\"action\\\":\\\"block_user\\\",\\\"messageId\\\":\\\"" + messageID + "\\\",\\\"channelId\\\":\\\"" + channelID + "\\\"}\"}";
+        Dictionary<string, string> data = new Dictionary<string, string>()
+        {
+            { "action", "send_whisper"},
+            { "channelId", channelID},
+            { "channel_id", channelID},
+            { "message_id", messageID},
+            { "messageId", messageID}
+        };
+        string sendMessage = new SocketCommandMessage(data).Serialize();
+
+        if (TroubleshootOutput) Console.WriteLine(sendMessage);
+
+
         Send(sendMessage);
 
         return JoystickWebsocketStatus.Success;
@@ -152,7 +190,17 @@ public class JoystickConnection
     {
         if (!isSocketOpen) return JoystickWebsocketStatus.SocketNotOpen;
 
-        string sendMessage = "{\"command\":\"message\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\",\"data\":\"{\\\"action\\\":\\\"unmute_user\\\",\\\"username\\\":\\\"" + user + "\\\",\\\"channelId\\\":\\\"" + channelID + "\\\"}\"}";
+        Dictionary<string, string> data = new Dictionary<string, string>()
+        {
+            { "action", "send_whisper"},
+            { "channel_id", channelID},
+            { "username", user}
+        };
+        string sendMessage = new SocketCommandMessage(data).Serialize();
+
+        if (TroubleshootOutput) Console.WriteLine(sendMessage);
+
+
         Send(sendMessage);
 
         return JoystickWebsocketStatus.Success;
@@ -166,7 +214,18 @@ public class JoystickConnection
     {
         if (!isSocketOpen) return JoystickWebsocketStatus.SocketNotOpen;
 
-        string sendMessage = "{\"command\":\"message\",\"identifier\": \"{\\\"channel\\\":\\\"GatewayChannel\\\"}\",\"data\": \"{\\\"action\\\":\\\"send_whisper\\\",\\\"username\\\":\\\"" + user + "\\\",\\\"text\\\": \\\"" + EscapeCharacters(message) + "\\\",\\\"channelId\\\":\\\"" + channelID + "\\\"}\"}";
+        Dictionary<string, string> data = new Dictionary<string, string>()
+        {
+            { "action", "send_whisper"},
+            { "text", message},
+            { "channel_id", channelID},
+            { "username", user}
+        };
+        string sendMessage = new SocketCommandMessage(data).Serialize();
+
+        if (TroubleshootOutput) Console.WriteLine(sendMessage);
+
+
         Send(sendMessage);
 
         return JoystickWebsocketStatus.Success;
@@ -176,11 +235,24 @@ public class JoystickConnection
     {
         if (!isSocketOpen) return JoystickWebsocketStatus.SocketNotOpen;
 
-        string sendMessage = "{\"command\":\"message\",\"identifier\": \"{\\\"channel\\\":\\\"GatewayChannel\\\"}\",\"data\": \"{\\\"action\\\":\\\"send_message\\\",\\\"text\\\": \\\"" + EscapeCharacters(message) + "\\\",\\\"channelId\\\":\\\"" + channelID + "\\\"}\"}";
+        //CommmandData data = new CommmandData("send_message", "", message, channelID, "");
+
+        Dictionary<string, string> data = new Dictionary<string, string>()
+        {
+            { "action", "send_message"},
+            { "text", message},
+            { "channel_id", channelID}
+        };
+
+        string sendMessage = new SocketCommandMessage(data).Serialize();
+ 
+        if (TroubleshootOutput) Console.WriteLine(sendMessage);
+
         Send(sendMessage);
 
         return JoystickWebsocketStatus.Success;
     }
+
     /// <summary>
     /// Removes the message with the specified ID from the specified Joystick channel.
     /// </summary>
@@ -188,7 +260,9 @@ public class JoystickConnection
     {
         if (!isSocketOpen) return JoystickWebsocketStatus.SocketNotOpen;
 
-        string sendMessage = "{\"command\":\"message\",\"identifier\":\"{\\\"channel\\\":\\\"GatewayChannel\\\"}\",\"data\": \"{\\\"action\\\": \\\"delete_message\\\",\\\"messageId\\\": \\\"" + messageID + "\\\",\\\"channelId\\\":\\\"" + channelID + "\\\"}\"}";
+        CommmandData data = new CommmandData("delete_message", "", "", channelID, messageID);
+        string sendMessage = new SocketCommandMessage(data).Serialize();
+
         Send(sendMessage);
 
         return JoystickWebsocketStatus.Success;
@@ -236,7 +310,7 @@ public class JoystickConnection
         {
             while (isSocketOpen && !canceller.IsCancellationRequested)
             {
-                JoystickMessage _msg = Receive();
+                JoystickSocketMessage _msg = Receive();
                 OnMessageReceived?.Invoke(this, _msg);
             }
             //if we aren't closing this, reconnect
@@ -254,12 +328,4 @@ public class JoystickConnection
             }
         }
     }
-
-    private static string EscapeCharacters(string message)
-    {
-        for (int i = message.Length - 1; i >= 0; i--)
-            if (message[i] == '"' || message[i] == '\\') message = message.Insert(i, "\\\\\\");
-        return message;
-    }
-
 }

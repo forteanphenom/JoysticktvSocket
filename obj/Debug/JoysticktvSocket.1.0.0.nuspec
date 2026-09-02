@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+  <metadata>
+    <id>JoysticktvSocket</id>
+    <version>1.0.0</version>
+    <authors>JoysticktvSocket</authors>
+    <description>Package Description</description>
+    <repository type="git" commit="5272d3d4145790b8320588aa25ee61036144e66b" />
+    <dependencies>
+      <group targetFramework="net8.0" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="C:\Users\ambro\source\repos\DLLs\JoysticktvSocket\JoysticktvSocket\bin\Debug\net8.0\JoysticktvSocket.dll" target="lib\net8.0\JoysticktvSocket.dll" />
+  </files>
+</package>

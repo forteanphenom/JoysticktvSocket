@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("JoysticktvSocket")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+30c1a516c4228ac83fbcbf437c7aeca91794b3bd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5272d3d4145790b8320588aa25ee61036144e66b")]
 [assembly: System.Reflection.AssemblyProductAttribute("JoysticktvSocket")]
 [assembly: System.Reflection.AssemblyTitleAttribute("JoysticktvSocket")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

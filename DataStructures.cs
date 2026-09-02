@@ -1,189 +1,194 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace JoysticktvSocket;
-/// <summary>An object representing the message or event received from Joystick.tv</summary>
 
-    public class JoystickMessage : EventArgs
+public class JoystickSocketMessage : EventArgs
+{
+    /// <summary>The JSON exactly as the socket recives it from Joystick.tv.</summary>
+    public string rawData { get; init; }
+    public MessageType type { get; init; }
+    public string type_text { get; init; }
+    public string? channelID { get; init; } //id and channelID for the message
+    public string? messageID { get; init; }
+
+
+    public string? user { get; init; }
+    public int? tipAmount { get; init; } //used for tips and also wheel spins
+    public string? prize { get; init; } //the tip menu item OR the reward from the wheel spin OR a met tip goal
+    public DateTime time { get; init; }
+    public int? count { get; init; } //viewers, subs, or followers, on an update event
+    public DateTime? timerEnds { get; init; }
+    public string? timerName { get; init; }
+    public string text { get; init; }    // message as it appears in chat
+    public List<Emote> emotes { get; init; }
+
+    public string? streamerName { get; init; }
+
+
+    public bool? isFromStreamer { get; init; }
+    public bool? isFromModerator { get; init; }
+    public bool? isFromSubscriber { get; init; }
+    public bool? isFromHost { get; init; }
+    public bool? isFromNew { get; init; }
+    public bool? isFromStaff { get; init; }
+    public bool? isHighlighted { get; init; }
+    public string? usernameColor { get; init; }
+    public int? subStreak { get; init; }
+
+    public JoystickSocketMessage()
     {
-        /// <summary>The JSON exactly as the socket recives it from Joystick.tv.</summary>
-        public string rawData { get; init; }
-        public MessageType type { get; init; }
-        public string? streamerName { get; init; }
-        public string? user { get; init; }
-        public int? tipAmount { get; init; } //used for tips and also wheel spins
-        public string? prize { get; init; } //the tip menu item OR the reward from the wheel spin OR a met tip goal
-        public string? channelID { get; init; } //id and channelID for the message
-        public string? messageID { get; init; }
-        public DateTime time { get; init; }
-        public int? count { get; init; } //viewers, subs, or followers, on an update event
-        public DateTime? timerEnds { get; init; }
-        public string? timerName { get; init; }
-        public string text { get; init; }    // message as it appears in chat
-        public (string emote, string emoteUrl)[]? emotes { get; init; }
-        public bool? isFromStreamer { get; init; }
-        public bool? isFromModerator { get; init; }
-        public bool? isFromSubscriber { get; init; }
-        public bool? isFromContentCreator { get; init; }
-        public bool? isHighlighted { get; init; }
-        public string? streamEventType { get; init; } //the type of stream event, directly as received from the websocket
-                                                      //this is so that i can see and collect new stream events as they happen and add them as types
-        public string? streamEventMetadata { get; init; } //this is so that i can collect the metadata structures for those events
+        type = MessageType.Unknown;
+        time = DateTime.Now;
+        text = "";
+    }
+    public JoystickSocketMessage(string message)
+    {
+        //Console.WriteLine(message);
 
-        public JoystickMessage()
+        rawData = message;
+
+        if (message == "")
         {
             type = MessageType.Unknown;
             time = DateTime.Now;
-            text = "";
-        }
-        public JoystickMessage(string message)
-        {
-            rawData = message;
-
-            if (message == "")
-            {
-                type = MessageType.Unknown;
-                time = DateTime.Now;
-                return;
-            }
-
-            if (message.StartsWith("{\"type\":\"ping\""))
-            {
-                type = MessageType.Ping;
-                RawMessages.Ping messageData = JsonSerializer.Deserialize<RawMessages.Ping>(message);
-                time = DateTimeOffset.FromUnixTimeSeconds((long)messageData.message).DateTime;
-                return;
-            }
-            else if (message.StartsWith("{\"type\""))
-            {
-                type = MessageType.Unknown;
-                time = DateTime.Now;
-                return;
-            }
-
-            RawMessages.ParsedEvent data = JsonSerializer.Deserialize<RawMessages.ParsedEvent>(StripIdentifier(message));
-            type = GetMessageType(data.@event, data.type);
-            time = data.createdAt ?? DateTime.Now;
-            channelID = data.channelId;
-            messageID = data.messageId ?? data.id;
-
-            if (type == MessageType.UserEnter || type == MessageType.UserLeave) user = data.text;
-
-            else if ((int)type >= 300)
-            {
-                text = data.text ?? "";
-                streamEventMetadata = data.metadata;
-                streamEventType = data.type;
-
-                RawMessages.ParsedEvent.MetaData metaData = JsonSerializer.Deserialize<RawMessages.ParsedEvent.MetaData>(data.metadata ?? "{}");
-
-                user = metaData.destination_username ?? metaData.who;
-                tipAmount = metaData.how_much;
-                count = metaData.number_of_viewers ?? metaData.number_of_followers ?? metaData.number_of_subscribers;
-                prize = metaData.title ?? metaData.tip_menu_item ?? metaData.prize;
-                timerEnds = metaData.endsAt;
-                timerName = metaData.name; //SO LONG AS ONLY TIMERS HAVE A NAME
-            }
-
-            else if (type == MessageType.ChatMessage)
-            {
-                streamerName = data.streamer.username;
-                user = data.author.username;
-                isFromSubscriber = data.author.isSubscriber;
-                isFromModerator = data.author.isModerator;
-                isFromStreamer = data.author.isStreamer;
-                isFromContentCreator = data.author.isContentCreator;
-                isHighlighted = data.highlight;
-                text = data.text;
-
-                //emotes, one at a time
-                List<(string emote, string emoteUrl)> _emotes = new(); //do this as a list to add the things, we convert it to an array in the end
-                foreach (RawMessages.ParsedEvent.EmoteEntry emoteEntry in data.emotesUsed)
-                    _emotes.Add((emoteEntry.code, emoteEntry.signedUrl));
-                emotes = _emotes.ToArray();
-            }
-            else if (type == MessageType.BotMessage)
-            {
-                text = data.text ?? "";
-            }
+            return;
         }
 
-        private MessageType GetMessageType(string? @event, string? type)
+        if (message.StartsWith("{\"type\":\"ping\""))
         {
-            if (@event == "ChatMessage") return MessageType.ChatMessage;
-            if (type == "enter_stream") return MessageType.UserEnter;
-            if (type == "leave_stream") return MessageType.UserLeave;
-            if (type == "Followed") return MessageType.NewFollower;
-            if (type == "SettingsUpdated") return MessageType.SettingsUpdated;
-            if (type == "Tipped") return MessageType.Tip;
-            if (type == "WheelSpinClaimed") return MessageType.WheelSpin;
-            if (type == "StreamDroppedIn") return MessageType.DropIn;
-            if (type == "DropinStream") return MessageType.OutgoingDropIn;
-            if (type == "Subscribed") return MessageType.NewSubscriber;
-            if (type == "GiftedSubscriptions") return MessageType.GiftSubs;
-            if (type == "TipMenuItemLocked") return MessageType.TipLocked;
-            if (type == "TipMenuItemUnlocked") return MessageType.TipUnlocked;
-            if (type == "TipGoalMet") return MessageType.TipGoal;
-            if (type == "TipGoalUpdated") return MessageType.TipGoalUpdate;
-            if (type == "TipGoalIncreased") return MessageType.TipGoalIncreased;
-            if (type == "StreamModeUpdated") return MessageType.StreamModeUpdated;
-            if (type == "ViewerCountUpdated") return MessageType.ViewerCountUpdate;
-            if (type == "SubscriberCountUpdated") return MessageType.SubCountUpdate;
-            if (type == "FollowerCountUpdated") return MessageType.FollowerCountUpdate;
-            if (type == "DeviceConnected") return MessageType.DeviceConnected;
-            if (type == "DeviceSettingsUpdated") return MessageType.DeviceSettingsUpdated;
-            if (type == "Started") return MessageType.StreamStart;
-            if (type == "Ended") return MessageType.StreamEnd;
-            if (type == "ChatTimerStarted") return MessageType.TimerStarted;
-            if (type == "VerifiedOnlyChatStarted") return MessageType.VerifiedOnlyStarted;
-            if (type == "VerifiedOnlyChatEnded") return MessageType.VerifiedOnlyEnded;
-            if (type == "MilestoneCompleted") return MessageType.MilestoneCompleted;
-            if (type == "DeviceDisconnected") return MessageType.DeviceDisconnected;
-            if (type == "UserMuted") return MessageType.UserMuted;
-            if (type == "UserUnmuted") return MessageType.UserUnmuted;
-            if (type == "PvpSessionRequested") return MessageType.PvpRequested;
-            if (type == "PvpSessionReady") return MessageType.PvpReady;
-            if (type == "PvpSessionStarted") return MessageType.PvpStarted;
-            if (type == "PvpSessionEnded") return MessageType.PvpEnded;
-            if (type == "Resubscribed") return MessageType.SubRenewed;
-            if (@event == "StreamEvent") return MessageType.UnknownStreamEvent;
-            if (@event == "BotMessage") return MessageType.BotMessage;
-            return MessageType.Unknown;
+            type = MessageType.Ping;
+            RawMessages.Ping messageData = JsonSerializer.Deserialize<RawMessages.Ping>(message);
+            time = DateTimeOffset.FromUnixTimeSeconds((long)messageData.message).DateTime;
+            return;
         }
 
-        public override string ToString()
+        if (message.StartsWith("{\"type\""))
         {
-            string result = "[" + time + "] " + type.ToString();
-            if (user != null) result += " from " + user.ToString();
-            if (text != null) result += ": " + text;
-            if (streamerName != null) result += "\nStreamer: " + streamerName;
-            if (tipAmount != null) result += "\nTip Amount: " + tipAmount;
-            if (prize != null) result += "\nPrize: " + prize;
-            if (channelID != null) result += "\nChannel ID: " + channelID;
-            if (messageID != null) result += "\nMessage ID: " + messageID;
-            if (streamEventType != null) result += "\nEvent Type: " + streamEventType;
-            if (streamEventMetadata != null) result += "\nEvent Meta: " + streamEventMetadata;
-            result += "\n";
-            return result;
+            type = MessageType.Unknown;
+            return;
         }
 
-        internal static string StripIdentifier(string message)
+        Event parsedMessage = JsonSerializer.Deserialize<Event>(message);
+        type_text = parsedMessage.message.type;
+        type = GetMessageType(parsedMessage.message.type);
+        time = parsedMessage.message.occurred_at;
+        channelID = parsedMessage.message.channel_id;
+        messageID = parsedMessage.message.id;
+        text = parsedMessage.message.text;
+
+        if (type == MessageType.ChatMessage)
         {
-            if (message.Length < 60) return message; // this prevents an error from returning if the message length is short.
-            return message.Substring(59, message.Length - 60);
-        } //gets rid of some junk in the json
+            user = parsedMessage.message.data.author.username;
+            isFromStreamer = parsedMessage.message.data.author.badges.streamer;
+            isFromHost = parsedMessage.message.data.author.badges.host;
+            isFromModerator = parsedMessage.message.data.author.badges.mod;
+            isFromStaff = parsedMessage.message.data.author.badges.staff;
+            isFromNew = parsedMessage.message.data.author.badges.@new;
+            isFromSubscriber = parsedMessage.message.data.author.badges.subscriber;
+            isHighlighted = parsedMessage.message.data.highlight;
+            streamerName = parsedMessage.message.data.streamer.username;
+            emotes = parsedMessage.message.data.emotes;
+
+            if (isFromSubscriber == true)
+                subStreak = parsedMessage.message.data.subscription.streak;
+
+            return;
+        }
+
+        user = parsedMessage.message.data.username ?? parsedMessage.message.data.destination_username ?? parsedMessage.message.data.who ?? parsedMessage.message.data.by_user;
+        tipAmount = parsedMessage.message.data.amount ?? parsedMessage.message.data.how_much;
+        timerEnds = parsedMessage.message.data.ends_at ?? parsedMessage.message.data.expires_at;
+        prize = parsedMessage.message.data.prize ?? parsedMessage.message.data.tip_menu_item;
+        count = parsedMessage.message.data.number_of_followers ?? parsedMessage.message.data.number_of_viewers ?? parsedMessage.message.data.number_of_subscribers;
+        timerName = parsedMessage.message.data.name;
     }
 
+    private static MessageType GetMessageType(string type)
+    {
+        if (type == "new_message") return MessageType.ChatMessage; // CHECK DOCS. THERE'S LOTS
 
+        if (type == "chat_timer_started") return MessageType.TimerStarted; // name endsAt/ends_at
+
+        if (type == "device_disconnected") return MessageType.DeviceDisconnected;
+        if (type == "device_connected") return MessageType.DeviceConnected;
+        if (type == "device_settings_updated") return MessageType.DeviceSettingsUpdated; // CHECK DOCS. THERE'S LOTS
+
+        if (type == "ended") return MessageType.StreamEnd; // who
+
+        if (type == "dropin_stream") return MessageType.OutgoingDropIn; // origin number_of_viewers destination_username
+        if (type == "followed") return MessageType.NewFollower; // who
+        if (type == "follower_count_updated") return MessageType.FollowerCountUpdate; // number_of_followers
+        if (type == "gifted_subscriptions") return MessageType.GiftSubs; // who how_much
+        if (type == "milestone_completed") return MessageType.MilestoneCompleted; // who title amount
+        if (type == "stream_dropped_in") return MessageType.DropIn; // who number_of_viewers
+        if (type == "settings_updated") return MessageType.SettingsUpdated; // updated_by
+        if (type == "started") return MessageType.StreamStart; // who
+        if (type == "subathon_started") return MessageType.BotMessage; //expires_at starting_duration
+        if (type == "subathon_ended") return MessageType.BotMessage; // reason banked_seconds
+        if (type == "subathon_extended") return MessageType.BotMessage; // who banked source seconds expires_at
+        if (type == "wheel_spin_claimed") return MessageType.WheelSpin; // who prize how_much sub_spin
+
+        if (type == "subscribed") return MessageType.NewSubscriber; // who how_much
+        if (type == "tip_goal_increased") return MessageType.TipGoalIncreased; // amount by_user current previous
+        if (type == "tip_goal_met") return MessageType.TipGoal; // who title amount
+
+        if (type == "tip_goal_updated") return MessageType.TipGoalUpdate; // title amount
+
+        if (type == "tip_menu_item_locked") return MessageType.TipLocked; // title amount
+        if (type == "tip_menu_item_unlocked") return MessageType.TipUnlocked; // title amount
+
+        if (type == "tipped") return MessageType.Tip; // who how_much tip_menu_item
+
+        if (type == "viewer_count_updated") return MessageType.ViewerCountUpdate; // number_of_viewers
+
+
+        if (type == "enter_stream") return MessageType.UserEnter; // who
+        if (type == "leave_stream") return MessageType.UserLeave; // who
+
+
+        // what is below this is not yet documented
+
+        if (type == "stream_mode_updated") return MessageType.StreamModeUpdated;
+        if (type == "subscriber_count_updated") return MessageType.SubCountUpdate;
+        if (type == "verified_only_chat_started") return MessageType.VerifiedOnlyStarted;
+        if (type == "verified_only_chat_ended") return MessageType.VerifiedOnlyEnded;
+        if (type == "user_muted") return MessageType.UserMuted;
+        if (type == "user_unmuted") return MessageType.UserUnmuted;
+        if (type == "pvp_session_requested") return MessageType.PvpRequested;
+        if (type == "pvp_session_seady") return MessageType.PvpReady;
+        if (type == "pvp_session_started") return MessageType.PvpStarted;
+        if (type == "pvp_Session_snded") return MessageType.PvpEnded;
+        if (type == "resubscribed") return MessageType.SubRenewed;
+        if (type == "bot_message") return MessageType.BotMessage;
+        return MessageType.Unknown;
+    }
+
+    public override string ToString()
+    {
+        string result = "[" + time + "] " + type.ToString();
+        if (user != null) result += " from " + user.ToString();
+        if (text != null) result += ": " + text;
+        if (streamerName != null) result += "\nStreamer: " + streamerName;
+        if (tipAmount != null) result += "\nTip Amount: " + tipAmount;
+        if (prize != null) result += "\nPrize: " + prize;
+        if (channelID != null) result += "\nChannel ID: " + channelID;
+        if (messageID != null) result += "\nMessage ID: " + messageID;
+        result += "\n";
+        return result;
+    }
+}
 
 
 
 //private class used to deserialize JSON
-internal class RawMessages
+public class RawMessages
 {
     public class Ping
     {
@@ -217,6 +222,7 @@ internal class RawMessages
             public bool? isModerator { get; set; }
             public bool? isSubscriber { get; set; }
             public bool? isContentCreator { get; set; }
+            public string? usernameColor { get; set; }
         }
         public Streamer? streamer { get; set; }
 
@@ -241,6 +247,103 @@ internal class RawMessages
             public string? destination_username { get; set; }//the destination of a drop in
         }
     }
+}
+
+
+public class Ping
+{
+    public long? message { get; set; }
+}
+public class Event
+{
+    public Message message { get; set; }
+}
+
+public class Message
+{
+    public string type { get; set; }
+    public string id { get; set; }
+    public string channel_id { get; set; }
+    public DateTime occurred_at { get; set; }
+    public string text { get; set; }
+
+    public Data data { get; set; }
+
+    public Message()
+    {
+        type = "undefined";
+        id = string.Empty;
+        channel_id = string.Empty;
+        DateTime occurred_at = DateTime.MinValue;
+        text = string.Empty;
+
+        data = new Data();
+    }
+
+}
+
+public class Data
+{
+    public string? name { get; set; }
+    public DateTime? ends_at { get; set; }
+    public string? who { get; set; }
+    public string? by_user { get; set; }
+    public string? origin { get; set; }
+    public string? destination_username { get; set; }
+    public int? number_of_viewers { get; set; }
+    public int? number_of_followers { get; set; }
+    public int? number_of_subscribers { get; set; }
+    public int? how_much { get; set; }
+    public string? title { get; set; }
+    public int? amount { get; set; }
+    public string? tip_menu_item { get; set; }
+    public string? prize { get; set; }
+    public DateTime? expires_at { get; set; }
+
+    public Author? author { get; set; }
+    public Streamer? streamer { get; set; }
+    public Subscription subscription { get; set; }
+    public string? text { get; set; }
+    public bool? highlight { get; set; }
+    public List<string>? mentions { get; set; }
+    public List<Emote>? emotes { get; set; }
+    public string username { get; set; }
+
+}
+
+public class Author
+{
+    public string? username { get; set; }
+    public string? nickname { get; set; }
+    public string? color { get; set; }
+    public Badges? badges { get; set; }
+}
+
+public class Subscription
+{
+    public int streak { get; set; }
+}
+
+public class Streamer
+{
+    public string username { get; set; }
+}
+
+public class Emote
+{
+    public string code { get; set; }
+    public string url { get; set; }
+}
+
+public class Badges
+{
+    public bool streamer { get; set; }
+    public bool mod { get; set; }
+    public bool subscriber { get; set; }
+    public bool @new { get; set; }
+    public bool host { get; set; }
+    public bool staff { get; set; }
+
 }
 
 //public enum of message types
@@ -309,26 +412,6 @@ public class oauthMessage
     {
         id = "";
         access_token = "";
-    }
-}
-
-public class oauthUserEntry
-{
-    public string username { get; set; }
-    public string channelID { get; set; }
-    private DateTime setTime { get; set; }
-
-    public oauthUserEntry(string username, string channelID)
-    {
-        this.username = username;
-        this.channelID = channelID;
-
-        setTime = DateTime.Now;
-    }
-
-    public bool CheckExpired()
-    {
-        return setTime > DateTime.Now.AddHours(-1);
     }
 }
 
@@ -440,11 +523,70 @@ public class Pagination
 public class SubscriberItems
 {
     public string username { get; set; }
-    public string expires_at { get; set; }
 
     public SubscriberItems()
     {
         username = "";
-        expires_at = "";
+    }
+}
+
+public class SocketSubscribeMessage
+{
+    public string command { get; set; }
+    public string identifier { get; set; }
+
+    public SocketSubscribeMessage()
+    {
+        command = "subscribe";
+        identifier = "{\"channel\":\"GatewayChannel\",\"event_version\":\"v2\"}";
+    }
+
+    public string Serialize()
+    {
+        return JsonSerializer.Serialize(this);
+    }
+}
+
+public class SocketCommandMessage
+{
+    public string command { get; set; }
+    public string identifier { get; set; }
+    public string data { get; set; }
+
+    public SocketCommandMessage(object data)
+    {
+        command = "message";
+        identifier = "{\"channel\":\"GatewayChannel\",\"event_version\":\"v2\"}";
+        this.data = JsonSerializer.Serialize(data);
+    }
+
+    public string Serialize()
+    {
+
+        var serializeOptions = new JsonSerializerOptions
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+        };
+        
+        return JsonSerializer.Serialize(this, serializeOptions);
+    }
+
+}
+
+public class CommmandData
+{
+    public string action { get; set; }
+    public string text { get; set; }
+    public string channel_id { get; set; }
+    public string message_id { get; set; }
+    public string username { get; set; }
+
+    public CommmandData(string action, string username, string text, string channelID, string messageID)
+    {
+        this.action = action;
+        this.text = text;
+        channel_id = channelID;
+        message_id = messageID;
+        this.username = username;
     }
 }
